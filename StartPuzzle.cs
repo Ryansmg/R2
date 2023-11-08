@@ -8,7 +8,7 @@ public class StartPuzzle : MonoBehaviour
     //PObj prefabs
     public GameObject woodenBoxPrefab;
     public GameObject ironBoxPrefab;
-    public GameObject laserBoxPrefab;
+    public GameObject mirrorPrefab;
 
     public GameObject scripts;
     public GameObject puzzleGridPrefab;
@@ -28,16 +28,13 @@ public class StartPuzzle : MonoBehaviour
     {
         PObj.woodenBoxPrefab = woodenBoxPrefab;
         PObj.ironBoxPrefab = ironBoxPrefab;
-        changePuzzleName = puzzleName;
+        PObj.mirrorPrefab = mirrorPrefab;
         if (!Editor.pnstatic.Equals("placeholder")) puzzleName = Editor.pnstatic;
+        changePuzzleName = puzzleName;
 
         scripts.GetComponent<SaveFile>().Load();
         PuzzleGrid[] testGrids = {
-            new(0,3,0), new(1,3,1), new(2,3,1), new(3,3,1), new(4,3,1), new(5,3,1), new(6,3,1), new(7,3,1), new(8,3,1), new(9,3,2),
-            new(0,2,3), new(1,2,4), new(2,2,4), new(3,2,Constant.GRID_GLASS_PIECE,4), new(4,2,Constant.GRID_GLASS_PIECE, 4), new(5,2,4), new(6,2,Constant.GRID_IRON_BOX,4), new(7,2,Constant.GRID_LASER_A,4), new(8,2,4), new(9,2,5),
-            new(0, 1, Constant.GRID_START, 3), new(1, 1, Constant.GRID_WALL, 4), new(2, 1, Constant.GRID_WALL, 4), new(3,1,4), new(4,1,Constant.GRID_WOODEN_BOX,4), new(5,1,Constant.GRID_LASER_D,4), new(6,1,4), new(7,1,4), new(8,1,4), new(9, 1, Constant.GRID_END, 5), 
-            new(0,0,3), new(1,0,4), new(2,0,4), new(3,0,4), new(4,0,4), new(5,0,4), new(6,0,4), new(7,0,4), new(8,0,4), new(9,0,5),
-            new(0,-1,6), new(1,-1,7), new(2,-1,7), new(3,-1,7), new(4,-1,7), new(5,-1,7), new(6,-1,7), new(7,-1,7), new(8,-1,7), new(9,-1,8)};
+            new(0,0,Constant.GRID_START, 4), new(1,0,Constant.GRID_END, 4)};
         Puzzle puzzle = new("test", 1000, 11, 500.0f, 500.0f, testGrids);
         puzzle.SavePuzzle();
         //LoadPuzzle(puzzle);
@@ -57,6 +54,7 @@ public class StartPuzzle : MonoBehaviour
         int startX = -10, startY = -10;
         foreach (PuzzleGrid grid in puzzle.grids)
         {
+            if (grid.status == Constant.GRID_OUTSIDE) continue;
             GameObject gridObj = Instantiate(puzzleGridPrefab);
             gridObj.GetComponent<GridManager>().grid = grid;
             gridObj.GetComponent<GridManager>().puzzle = puzzle;

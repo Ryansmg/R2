@@ -54,6 +54,8 @@ public class Puzzle
 
         foreach ( PuzzleGrid grid in grids )
         {
+            if (grid.status == Constant.GRID_OUTSIDE) continue;
+
             if (grid.x > maxX) maxX = grid.x;
             if (grid.y > maxY) maxY = grid.y;
             if (grid.x < minX) minX = grid.x;

@@ -28,6 +28,14 @@ public class Constant
     public const int GRID_LASER_A = 11;
     public const int GRID_LASER_S = 12;
     public const int GRID_LASER_D = 13;
+    public const int GRID_CONVEYOR_W = 14;
+    public const int GRID_CONVEYOR_A = 15;
+    public const int GRID_CONVEYOR_S = 16;
+    public const int GRID_CONVEYOR_D = 17;
+    public const int GRID_MIRROR_Q = 18;
+    public const int GRID_MIRROR_Z = 19;
+    public const int GRID_MIRROR_C = 20;
+    public const int GRID_MIRROR_E = 21;
 
 
 

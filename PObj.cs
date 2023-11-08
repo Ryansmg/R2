@@ -8,11 +8,13 @@ public class PObj
     public readonly int type;
     public static GameObject woodenBoxPrefab;
     public static GameObject ironBoxPrefab;
+    public static GameObject mirrorPrefab;
     public GameObject gObject;
     public Puzzle puzzle;
     public bool isMoveable;
     public float hp;
     public bool isOnLaser = false;
+    bool isMirror = false;
 
     public PObj(int x, int y, int type)
     {
@@ -35,7 +37,31 @@ public class PObj
             case Constant.GRID_IRON_BOX:
                 gObject = Object.Instantiate(ironBoxPrefab);
                 isMoveable = false;
-                hp = 1000000f;
+                hp = 10000000f;
+                break;
+            case Constant.GRID_MIRROR_Q:
+                gObject = Object.Instantiate(mirrorPrefab);
+                gObject.transform.rotation = Quaternion.Euler(0, 0, 90);
+                isMoveable = false;
+                isMirror = true;
+                break;
+            case Constant.GRID_MIRROR_Z:
+                gObject = Object.Instantiate(mirrorPrefab);
+                gObject.transform.rotation = Quaternion.Euler(0, 0, 180);
+                isMoveable = false;
+                isMirror = true;
+                break;
+            case Constant.GRID_MIRROR_C:
+                gObject = Object.Instantiate(mirrorPrefab);
+                gObject.transform.rotation = Quaternion.Euler(0, 0, 270);
+                isMoveable = false;
+                isMirror = true;
+                break;
+            case Constant.GRID_MIRROR_E:
+                gObject = Object.Instantiate(mirrorPrefab);
+                gObject.transform.rotation = Quaternion.Euler(0, 0, 0);
+                isMoveable = false;
+                isMirror = true;
                 break;
             default: return;
         }
@@ -54,9 +80,16 @@ public class PObj
         if(puzzle.GetGrid(nx, ny).isMoveable && objCheck)
         {
             puzzle.objects.Remove(new(x, y));
+
+            if (isMirror)
+            {
+
+            }
+
             puzzle.objects.Add(new(nx, ny), this);
             x = nx;
             y = ny;
+
         }
     }
 

@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public static Player currentPlayer;
     public int x;
     public int y;
     public int moveDirection = DIR_NONE;
@@ -26,7 +27,9 @@ public class Player : MonoBehaviour
     public const int DIR_D = 3;
 
     Vector3 velocity = Vector3.zero;
-    public float smoothness;
+    public float defaultSmoothness;
+    public float conveyorSmoothness;
+    float smoothness;
     public float laserDamageTimer = 0f;
     public int currentLaserStartX;
     public int currentLaserStartY;
@@ -35,8 +38,15 @@ public class Player : MonoBehaviour
     public int currentGlassPieceY;
     public bool wasGlassPiece = false;
 
+    public float conveyorWaitTimerDefault;
+    float conveyorWaitTimer = 0f;
+
     // Debug Variables
     public bool allowFreeMovement = false;
+    void Start()
+    {
+        currentPlayer = this;
+    }
 
     // Update is called once per frame
     void Update()
@@ -160,6 +170,63 @@ public class Player : MonoBehaviour
         
         if (!allowInput) { return; }
 
+        //conveyor movement
+        if (IsGridConveyor(puzzle.GetGrid(x, y)) && conveyorWaitTimer > 0)
+        {
+            conveyorWaitTimer -= Time.deltaTime;
+            return;
+        }
+        else if (!IsGridConveyor(StartPuzzle.currentPuzzle.GetGrid(x, y)))
+        {
+            conveyorWaitTimer = conveyorWaitTimerDefault;
+            smoothness = defaultSmoothness;
+        }
+
+        if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_W)
+        {
+            if (CheckMoveable(x, y + 1))
+            {
+                smoothness = conveyorSmoothness;
+                y++;
+                moveDirection = DIR_W;
+                conveyorWaitTimer = conveyorWaitTimerDefault;
+                return;
+            }
+        }
+        else if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_A)
+        {
+            if (CheckMoveable(x - 1, y))
+            {
+                smoothness = conveyorSmoothness;
+                x--;
+                moveDirection = DIR_A;
+                conveyorWaitTimer = conveyorWaitTimerDefault;
+                return;
+            }
+        }
+        else if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_S)
+        {
+            if (CheckMoveable(x, y - 1))
+            {
+                smoothness = conveyorSmoothness;
+                y--;
+                moveDirection = DIR_S;
+                conveyorWaitTimer = conveyorWaitTimerDefault;
+                return;
+            }
+        }
+        else if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_D)
+        {
+            if (CheckMoveable(x + 1, y))
+            {
+                smoothness = conveyorSmoothness;
+                x++;
+                moveDirection = DIR_D;
+                conveyorWaitTimer = conveyorWaitTimerDefault;
+                return;
+            }
+        }
+
         //detect inputs and move player
         if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
         { y++; moveDirection = DIR_W; oxygen--; }
@@ -210,6 +277,34 @@ public class Player : MonoBehaviour
                 logErrorNullRefUpdate0 = false;
             }
         }
+    }
+
+    public static bool IsGridConveyor(PuzzleGrid grid)
+    {
+        return grid.status == Constant.GRID_CONVEYOR_W || grid.status == Constant.GRID_CONVEYOR_A
+            || grid.status == Constant.GRID_CONVEYOR_S || grid.status == Constant.GRID_CONVEYOR_D;
+    }
+
+    public static bool CheckPlayer(PuzzleGrid grid)
+    {
+        return currentPlayer.x == grid.x && currentPlayer.y == grid.y;
+    }
+
+    public bool CheckMoveable(int nx, int ny)
+    {
+        bool isMoveable = true;
+        if (!puzzle.GetGrid(nx, ny).isMoveable) isMoveable = false;
+        if (puzzle.objects.TryGetValue(new(nx, ny), out PObj pObj))
+            if (!pObj.isMoveable) isMoveable = false;
+        return isMoveable;
+    }
+    public static bool CheckMoveableStatic(int nx, int ny)
+    {
+        bool isMoveable = true;
+        if (!StartPuzzle.currentPuzzle.GetGrid(nx, ny).isMoveable) isMoveable = false;
+        if (StartPuzzle.currentPuzzle.objects.TryGetValue(new(nx, ny), out PObj pObj))
+            if (!pObj.isMoveable) isMoveable = false;
+        return isMoveable;
     }
     public void GoBack()
     {
