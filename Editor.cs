@@ -12,6 +12,8 @@ public class Editor : MonoBehaviour
     public bool decCamSize = false;
     public Camera cam;
     public bool loadNew = false;
+    public bool indentSave = true;
+    public bool save = false;
     public bool endEdit = false;
 
     public int status;
@@ -48,13 +50,29 @@ public class Editor : MonoBehaviour
         {
             if (endEdit)
             {
-                Puzzle newPuzzle = new(puzzleName, oxygen, minMove, hp, perfectHp, StartPuzzle.currentPuzzle.grids);
-                newPuzzle.SavePuzzle();
+                List<PuzzleGrid> removeList = new();
+                foreach (PuzzleGrid g in StartPuzzle.currentPuzzle.grids)
+                    if (g.status == Constant.GRID_OUTSIDE) removeList.Add(g);
+                foreach (PuzzleGrid g in removeList) StartPuzzle.currentPuzzle.grids.Remove(g);
+
+                Puzzle newPuzzle = new(puzzleName, oxygen, minMove, hp, perfectHp, StartPuzzle.currentPuzzle.grids.ToArray());
+                newPuzzle.SavePuzzle(indentSave);
                 StartPuzzle.puzzleName = puzzleName;
                 SceneManager.LoadScene("PuzzleScene");
                 pnstatic = "placeholder";
                 isEditing = false;
                 return;
+            }
+            if (save)
+            {
+                List<PuzzleGrid> removeList = new();
+                foreach(PuzzleGrid g in StartPuzzle.currentPuzzle.grids)
+                    if (g.status == Constant.GRID_OUTSIDE) removeList.Add(g);
+                foreach (PuzzleGrid g in removeList) StartPuzzle.currentPuzzle.grids.Remove(g);
+
+                Puzzle newPuzzle = new(puzzleName, oxygen, minMove, hp, perfectHp, StartPuzzle.currentPuzzle.grids.ToArray());
+                newPuzzle.SavePuzzle(indentSave);
+                save = false;
             }
             if (confirmChange)
             {
@@ -76,12 +94,17 @@ public class Editor : MonoBehaviour
                 if (grid.status == Constant.GRID_LASER_W || grid.status == Constant.GRID_LASER_A ||
                     grid.status == Constant.GRID_LASER_S || grid.status == Constant.GRID_LASER_D)
                 {
-                    PuzzleGrid[] newLSG = new PuzzleGrid[StartPuzzle.currentPuzzle.laserStartGrids.Length + 1];
-                    int length = StartPuzzle.currentPuzzle.laserStartGrids.Length;
-                    for (int i = 0; i < length; i++) newLSG[i] = StartPuzzle.currentPuzzle.laserStartGrids[i];
-                    newLSG[length] = grid;
-
-                    StartPuzzle.currentPuzzle.laserStartGrids = newLSG;
+                    StartPuzzle.currentPuzzle.laserStartGrids.Add(grid);
+                } else
+                {
+                    foreach(PuzzleGrid lgrid in StartPuzzle.currentPuzzle.laserStartGrids)
+                    {
+                        if(lgrid.x == grid.x && lgrid.y == grid.y)
+                        {
+                            StartPuzzle.currentPuzzle.laserStartGrids.Remove(lgrid);
+                            break;
+                        }
+                    }
                 }
                 confirmChange = false;
             }

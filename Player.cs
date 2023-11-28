@@ -51,7 +51,6 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         preHp = hp;
 
         bool allowInput = true;
@@ -86,19 +85,15 @@ public class Player : MonoBehaviour
             if(puzzle.GetGrid(x,y) == Puzzle.nonExistentGrid)
             {
                 PuzzleGrid newGrid = new(x, y, Constant.GRID_OUTSIDE, 9);
-                int length = puzzle.grids.Length;
-                PuzzleGrid[] newGrids = new PuzzleGrid[length + 1];
-                for(int i=0; i<length; i++) newGrids[i] = puzzle.grids[i];
-                newGrids[length] = newGrid;
-
-                puzzle.grids = newGrids;
+                puzzle.grids.Add(newGrid);
+                puzzle.gridsDict.Add($"{x},{y}", puzzle.grids.Count - 1);
 
                 GameObject puzzleGridPrefab = GameObject.Find("Scripts").GetComponent<StartPuzzle>().puzzleGridPrefab;
 
-                GameObject gridObj = Instantiate(puzzleGridPrefab);
+                GameObject gridObj = Instantiate(puzzleGridPrefab, GameObject.Find("Grids").transform);
                 gridObj.GetComponent<GridManager>().grid = newGrid;
                 gridObj.GetComponent<GridManager>().puzzle = puzzle;
-                new PObj(newGrid.x, newGrid.y, newGrid.status).Generate();
+                //new PObj(newGrid.x, newGrid.y, newGrid.status).Generate();
             }
 
             return;
@@ -332,6 +327,8 @@ public class Player : MonoBehaviour
 
     public void GenerateLasers()
     {
+        foreach (KeyValuePair<KeyValuePair<int, int>, PObj> pair in currentPlayer.puzzle.objects)
+            pair.Value.isOnLaser = false;
         int currentX, currentY;
         foreach (PuzzleGrid grid in puzzle.grids)
         {
@@ -342,10 +339,12 @@ public class Player : MonoBehaviour
         foreach (PuzzleGrid grid in puzzle.laserStartGrids)
         {
             PObj currentPObject;
-            switch (grid.status)
+            currentX = grid.x; currentY = grid.y;
+            int dir = grid.status;
+            changeDir:
+            switch (dir)
             {
                 case Constant.GRID_LASER_W:
-                    currentX = grid.x; currentY = grid.y;
                     puzzle.GetGrid(currentX, currentY).laserExists = true;
                     puzzle.GetGrid(currentX, currentY).yLaserExists = true;
                     puzzle.GetGrid(currentX, currentY).laserStartX = grid.x;
@@ -365,7 +364,20 @@ public class Player : MonoBehaviour
                             }
                             else
                             {
-                                currentPObject.isOnLaser = true;
+                                currentPObject.laserDir = PObj.ld_w;
+                                if (currentPObject.type == Constant.GRID_MIRROR_C)
+                                {
+                                    dir = Constant.GRID_LASER_D;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                }
+                                else if (currentPObject.type == Constant.GRID_MIRROR_Z)
+                                {
+                                    dir = Constant.GRID_LASER_A;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                } else if(!currentPObject.isMirror)
+                                    currentPObject.isOnLaser = true;
                                 break;
                             }
                         }
@@ -380,7 +392,6 @@ public class Player : MonoBehaviour
                     }
                     break;
                 case Constant.GRID_LASER_A:
-                    currentX = grid.x; currentY = grid.y;
                     puzzle.GetGrid(currentX, currentY).laserExists = true;
                     puzzle.GetGrid(currentX, currentY).xLaserExists = true;
                     puzzle.GetGrid(currentX, currentY).laserStartX = grid.x;
@@ -400,8 +411,20 @@ public class Player : MonoBehaviour
                             }
                             else
                             {
+                                currentPObject.laserDir = PObj.ld_a;
+                                if (currentPObject.type == Constant.GRID_MIRROR_E)
+                                {
+                                    dir = Constant.GRID_LASER_W;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                } else if (currentPObject.type == Constant.GRID_MIRROR_C)
+                                {
+                                    dir = Constant.GRID_LASER_S;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                } else if (!currentPObject.isMirror)
                                 currentPObject.isOnLaser = true;
-                                break;
+                            break;
                             }
                         }
                         else
@@ -415,7 +438,6 @@ public class Player : MonoBehaviour
                     }
                     break;
                 case Constant.GRID_LASER_S:
-                    currentX = grid.x; currentY = grid.y;
                     puzzle.GetGrid(currentX, currentY).laserExists = true;
                     puzzle.GetGrid(currentX, currentY).yLaserExists = true;
                     puzzle.GetGrid(currentX, currentY).laserStartX = grid.x;
@@ -435,7 +457,21 @@ public class Player : MonoBehaviour
                             }
                             else
                             {
-                                currentPObject.isOnLaser = true;
+                                currentPObject.laserDir = PObj.ld_s;
+                                if (currentPObject.type == Constant.GRID_MIRROR_Q)
+                                {
+                                    dir = Constant.GRID_LASER_A;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                }
+                                else if (currentPObject.type == Constant.GRID_MIRROR_E)
+                                {
+                                    dir = Constant.GRID_LASER_D;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                }
+                                else if (!currentPObject.isMirror)
+                                    currentPObject.isOnLaser = true;
                                 break;
                             }
                         }
@@ -450,7 +486,6 @@ public class Player : MonoBehaviour
                     }
                     break;
                 case Constant.GRID_LASER_D:
-                    currentX = grid.x; currentY = grid.y;
                     puzzle.GetGrid(currentX, currentY).laserExists = true;
                     puzzle.GetGrid(currentX, currentY).xLaserExists = true;
                     puzzle.GetGrid(currentX, currentY).laserStartX = grid.x;
@@ -470,7 +505,21 @@ public class Player : MonoBehaviour
                             }
                             else
                             {
-                                currentPObject.isOnLaser = true;
+                                currentPObject.laserDir = PObj.ld_d;
+                                if (currentPObject.type == Constant.GRID_MIRROR_Q)
+                                {
+                                    dir = Constant.GRID_LASER_W;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                }
+                                else if (currentPObject.type == Constant.GRID_MIRROR_Z)
+                                {
+                                    dir = Constant.GRID_LASER_S;
+                                    currentPObject.isOnLaser = true;
+                                    goto changeDir;
+                                }
+                                else if (!currentPObject.isMirror)
+                                    currentPObject.isOnLaser = true;
                                 break;
                             }
                         }

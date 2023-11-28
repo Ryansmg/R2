@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,7 +10,8 @@ public class GridManager : MonoBehaviour
     public GameObject ironBox;
     public GameObject woodenBox;
     public GameObject laser;
-    public GameObject laser2;
+    public GameObject laserX;
+    public GameObject laserY;
     public GameObject glassPiece;
     public GameObject conveyor;
     public GameObject mirror;
@@ -28,7 +30,10 @@ public class GridManager : MonoBehaviour
         woodenBox.SetActive(false);
         laser.SetActive(false);
         glassPiece.SetActive(false);
-        laser2.SetActive(false);
+        laserX.SetActive(false);
+        laserY.SetActive(false);
+        mirror.SetActive(false);
+        conveyor.SetActive(false);
 
         if (Editor.isEditing)
         {
@@ -58,7 +63,7 @@ public class GridManager : MonoBehaviour
         }
         if (status == Constant.GRID_END) portal.SetActive(true);
         if (status == Constant.GRID_WALL) block.SetActive(true);
-        if (status == Constant.GRID_LASER) laser2.SetActive(true);
+        if (status == Constant.GRID_LASER) laserX.SetActive(true);
         if (status == Constant.GRID_GLASS_PIECE) glassPiece.SetActive(true);
         if (status == Constant.GRID_CONVEYOR_W)
         {
@@ -100,23 +105,27 @@ public class GridManager : MonoBehaviour
             laser.SetActive(true);
             laser.transform.rotation = Quaternion.Euler(0, 0, 180);
         }
-        if (grid.xLaserExists)
+        bool noMirror = true;
+        try
         {
-            laser2.SetActive(true);
-            laser2.transform.rotation = Quaternion.Euler(0, 0, 0);
+            bool objExi = puzzle.objects.TryGetValue(new(grid.x, grid.y), out PObj thisObj);
+            if (objExi) noMirror = !thisObj.isMirror;
+        } catch (NullReferenceException) { }
+        if (grid.xLaserExists && noMirror)
+        {
+            laserX.SetActive(true);
         }
-        if(grid.yLaserExists)
+        if(grid.yLaserExists && noMirror)
         {
-            laser2.SetActive(true);
-            laser2.transform.rotation = Quaternion.Euler(0, 0, 90);
+            laserY.SetActive(true);
         }
 
         //deprecated status
         if (status == Constant.GRID_LASER_START)
         {
-            laser.SetActive(true); laser2.SetActive(true);
+            laser.SetActive(true); laserX.SetActive(true);
         }
-        if (status == Constant.GRID_LASER_END) laser2.SetActive(true);
+        if (status == Constant.GRID_LASER_END) laserX.SetActive(true);
         gameObject.transform.position = new Vector3(grid.x, grid.y);
         tiles[grid.tile].SetActive(true);
         for (int i = 0; i < grid.tile; i++) tiles[i].SetActive(false);

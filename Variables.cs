@@ -17,9 +17,12 @@ public class Variables
     //settingsEnd
 
     //status
-    public int[] puzzleStatus;
-    public string[] puzzleName;
-    public bool[] tutorialShown;
+    /// <summary>
+    /// {puzzleName, puzzleStatus}
+    /// </summary>
+    public List<KeyValuePair<string, int>> puzzles; 
+
+    public List<bool> tutorialShown;
     //statusEnd
 
     public Variables()
@@ -33,8 +36,15 @@ public class Variables
         gold = 0;
         isHard = false;
         time = 0;
-        puzzleName = new string[] { "tutorial0", "tutorial1", "tutorial2" };
-        puzzleStatus = new int[] { Constant.PUZZLE_NEW, Constant.PUZZLE_NOT_OPENED, Constant.PUZZLE_HIDDEN };
-        tutorialShown = new bool[] { false,  false };
+        puzzles = new()
+        {
+            new("tutorial0", Constant.PUZZLE_NEW),
+            new("tutorial1", Constant.PUZZLE_NOT_OPENED),
+            new("tutorial2", Constant.PUZZLE_HIDDEN)
+        };
+        tutorialShown = new()
+        {
+            false, false
+        };
     }
 }

@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 public class Constant
@@ -16,6 +18,7 @@ public class Constant
     public const int THEME_TEST = -1;
 
     //grid
+    public const int GRID_OUTSIDEWALL = -2;
     public const int GRID_OUTSIDE = -1;
     public const int GRID_EMPTY = 0;
     public const int GRID_START = 1;
@@ -36,6 +39,12 @@ public class Constant
     public const int GRID_MIRROR_Z = 19;
     public const int GRID_MIRROR_C = 20;
     public const int GRID_MIRROR_E = 21;
+
+    public static bool IsStatusObj(int status)
+    {
+        int[] objStatus = { 5, 6, 10, 11, 12, 13, 18, 19, 20, 21 };
+        return objStatus.Contains(status);
+    }
 
 
 

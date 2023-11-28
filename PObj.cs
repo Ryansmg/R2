@@ -14,7 +14,14 @@ public class PObj
     public bool isMoveable;
     public float hp;
     public bool isOnLaser = false;
-    bool isMirror = false;
+    public int laserDir = ld_none;
+    public const int ld_none = -1;
+    public const int ld_w = 0;
+    public const int ld_a = 1;
+    public const int ld_s = 2;
+    public const int ld_d = 3;
+
+    public bool isMirror = false;
 
     public PObj(int x, int y, int type)
     {
@@ -30,35 +37,35 @@ public class PObj
         switch (type)
         {
             case Constant.GRID_WOODEN_BOX:
-                gObject = Object.Instantiate(woodenBoxPrefab);
+                gObject = Object.Instantiate(woodenBoxPrefab, GameObject.Find("Objects").transform);
                 isMoveable = false;
                 hp = 1.5f;
                 break;
             case Constant.GRID_IRON_BOX:
-                gObject = Object.Instantiate(ironBoxPrefab);
+                gObject = Object.Instantiate(ironBoxPrefab, GameObject.Find("Objects").transform);
                 isMoveable = false;
                 hp = 10000000f;
                 break;
             case Constant.GRID_MIRROR_Q:
-                gObject = Object.Instantiate(mirrorPrefab);
+                gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 90);
                 isMoveable = false;
                 isMirror = true;
                 break;
             case Constant.GRID_MIRROR_Z:
-                gObject = Object.Instantiate(mirrorPrefab);
+                gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 180);
                 isMoveable = false;
                 isMirror = true;
                 break;
             case Constant.GRID_MIRROR_C:
-                gObject = Object.Instantiate(mirrorPrefab);
+                gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 270);
                 isMoveable = false;
                 isMirror = true;
                 break;
             case Constant.GRID_MIRROR_E:
-                gObject = Object.Instantiate(mirrorPrefab);
+                gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 0);
                 isMoveable = false;
                 isMirror = true;
@@ -80,16 +87,10 @@ public class PObj
         if(puzzle.GetGrid(nx, ny).isMoveable && objCheck)
         {
             puzzle.objects.Remove(new(x, y));
-
-            if (isMirror)
-            {
-
-            }
-
             puzzle.objects.Add(new(nx, ny), this);
             x = nx;
             y = ny;
-
+            isOnLaser = false;
         }
     }
 

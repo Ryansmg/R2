@@ -24,10 +24,12 @@ public class PObjManager : MonoBehaviour
         } catch (NullReferenceException) { }
 
         //laser behavior
-        if(pObj.isOnLaser)
+        try
         {
-            mirrorLaser.SetActive(true);
+            mirrorLaser.SetActive(pObj.isOnLaser);
         }
+        catch (NullReferenceException) { }
+        catch (UnassignedReferenceException) { }
 
         //conveyor movement
         if (Player.IsGridConveyor(StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y)) && conveyorWaitTimer > 0)

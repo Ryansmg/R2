@@ -29,6 +29,7 @@ public class PuzzleGrid {
         {
             Constant.GRID_WALL => false,
             Constant.GRID_OUTSIDE => false,
+            Constant.GRID_OUTSIDEWALL => false,
             Constant.GRID_LASER_W => false,
             Constant.GRID_LASER_A => false,
             Constant.GRID_LASER_S => false,

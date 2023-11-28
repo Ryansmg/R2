@@ -17,6 +17,7 @@ public class StartPuzzle : MonoBehaviour
     public static string puzzleName = "test";
     public static Puzzle currentPuzzle;
     public static bool puzzleLoaded = false;
+    public bool editMode = false;
 
     //Debug
     public string changePuzzleName;
@@ -47,6 +48,7 @@ public class StartPuzzle : MonoBehaviour
     }
     public void LoadPuzzle(Puzzle puzzle)
     {
+        Transform gridT = GameObject.Find("Grids").transform;
         currentPuzzle = puzzle;
 
         Camera.main.transform.position = new Vector3(puzzle.cameraPosX, puzzle.cameraPosY, -10);
@@ -55,11 +57,11 @@ public class StartPuzzle : MonoBehaviour
         foreach (PuzzleGrid grid in puzzle.grids)
         {
             if (grid.status == Constant.GRID_OUTSIDE) continue;
-            GameObject gridObj = Instantiate(puzzleGridPrefab);
+            GameObject gridObj = Instantiate(puzzleGridPrefab, gridT);
             gridObj.GetComponent<GridManager>().grid = grid;
             gridObj.GetComponent<GridManager>().puzzle = puzzle;
             if (grid.status == Constant.GRID_START) { startX = grid.x; startY = grid.y; }
-            new PObj(grid.x, grid.y, grid.status).Generate();
+            if(!editMode) new PObj(grid.x, grid.y, grid.status).Generate();
         }
 
 
@@ -96,7 +98,7 @@ public class StartPuzzle : MonoBehaviour
             for(int y = mapStartY; y >= mapEndY; y--)
             {
                 PuzzleGrid backGrid = new(x, y, Constant.GRID_OUTSIDE, 9);
-                GameObject backGridGO = Instantiate(puzzleGridPrefab);
+                GameObject backGridGO = Instantiate(puzzleGridPrefab, GameObject.Find("Grids").transform);
                 backGridGO.GetComponent<GridManager>().grid = backGrid;
             }
         }

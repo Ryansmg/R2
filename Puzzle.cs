@@ -2,6 +2,8 @@ using Newtonsoft.Json;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+
 public class Puzzle
 {
     public string puzzleName;
@@ -28,16 +30,19 @@ public class Puzzle
 
     public bool isXLong;
 
-    public PuzzleGrid[] grids;
+    public List<PuzzleGrid> grids;
+    //x,y -> index of grids
+    public Dictionary<string, int> gridsDict;
     public Dictionary<KeyValuePair<int, int>, PObj> objects = new();
-    public PuzzleGrid[] laserStartGrids;
+    public List<PuzzleGrid> laserStartGrids;
 
     public static PuzzleGrid nonExistentGrid = new(int.MinValue, int.MinValue, Constant.GRID_OUTSIDE, -1);
     Puzzle() { }
     public Puzzle(string name, int oxygen, int minMove, float hp, float perfectHp, PuzzleGrid[] grids)
     {
         puzzleName = name;
-        this.grids = grids;
+        this.grids = grids.ToList();
+        gridsDict = new();
         maxX = int.MinValue;
         maxY = int.MinValue;
         minX = int.MaxValue;
@@ -49,11 +54,13 @@ public class Puzzle
         this.perfectHp = perfectHp;
         bool hasStart = false, hasEnd = false;
 
-        ArrayList duplicationCheck = new();
-        ArrayList laserStartGrids = new();
+        List<string> duplicationCheck = new();
+        List<PuzzleGrid> laserStartGrids = new();
 
+        int gridIndex = -1;
         foreach ( PuzzleGrid grid in grids )
         {
+            gridIndex++;
             if (grid.status == Constant.GRID_OUTSIDE) continue;
 
             if (grid.x > maxX) maxX = grid.x;
@@ -63,6 +70,7 @@ public class Puzzle
 
             if(duplicationCheck.Contains(grid.x + "," + grid.y)) throw new InvalidDataException("This puzzle has duplicate grids. Delete one grid.");
             duplicationCheck.Add(grid.x + "," + grid.y);
+            gridsDict.Add($"{grid.x},{grid.y}", gridIndex);
 
             if ((grid.status == Constant.GRID_START) && hasStart) throw new InvalidDataException("This puzzle has multiple start grids.");
             if (grid.status == Constant.GRID_START) hasStart = true;
@@ -72,11 +80,7 @@ public class Puzzle
         if (!hasStart) throw new InvalidDataException("This puzzle doesn't have a start grid.");
         if (!hasEnd) throw new InvalidDataException("This puzzle doesn't have a end grid.");
 
-        this.laserStartGrids = new PuzzleGrid[laserStartGrids.Count];
-        for(int i = 0; i < laserStartGrids.Count; i++ )
-        {
-            this.laserStartGrids[i] = (PuzzleGrid) laserStartGrids.ToArray()[i];
-        }
+        this.laserStartGrids = laserStartGrids;
 
         xLength = maxX - minX + 1;
         yLength = maxY - minY + 1;
@@ -87,6 +91,11 @@ public class Puzzle
 
         puzzleTheme = Constant.THEME_TEST;
     }
+    public void SavePuzzle(bool indented)
+    {
+        if (indented) SavePuzzle();
+        else SavePuzzleNotIndented();
+    }
     public void SavePuzzle()
     {
         string filePath = $"Assets\\Resources\\puzzle\\{puzzleName}.txt";
@@ -96,13 +105,22 @@ public class Puzzle
         Debug.LogError("Tried SavePuzzle() outside unity editor.");
 #endif
     }
+    public void SavePuzzleNotIndented()
+    {
+        string filePath = $"Assets\\Resources\\puzzle\\{puzzleName}.txt";
+#if UNITY_EDITOR
+        File.WriteAllText(filePath, JsonConvert.SerializeObject(this));
+#else
+        Debug.LogError("Tried SavePuzzle() outside unity editor.");
+#endif
+    }
     public PuzzleGrid GetGrid(int x, int y)
     {
-        foreach (PuzzleGrid grid in grids)
+        if (gridsDict.TryGetValue($"{x},{y}", out int value))
         {
-            if (grid.x == x && grid.y == y) return grid;
+            return grids[value];
         }
-        return nonExistentGrid;
+        else return nonExistentGrid;
     }
     bool IsGridLaserStart(int status)
     {
