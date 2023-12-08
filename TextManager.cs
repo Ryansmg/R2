@@ -8,26 +8,32 @@ using UnityEngine.UI;
 public class TextManager : MonoBehaviour
 {
     public string textType;
-    public GameObject scripts;
     bool logErrorUTT = false;
     bool logErrorNRE = false;
+    long fpsSum = 0; readonly Queue<int> fpsQueue = new();
+    const int fpsQueueLength = 1000; const int fpsBigChangeLimit = 15;
     void Update()
     {
-        if(!StartPuzzle.puzzleLoaded) { return; }
         try
         {
             TMP_Text text = gameObject.GetComponent<TMP_Text>();
             switch (textType)
             {
-                case "oxygen":
-                    int oxygenNow = scripts.GetComponent<StartPuzzle>().player.GetComponent<Player>().oxygen;
-                    int maxOxygen = scripts.GetComponent<StartPuzzle>().player.GetComponent<Player>().puzzle.oxygen;
-                    text.text = $"{oxygenNow}/{maxOxygen}";
-                    break;
-                case "hp":
-                    float hpNow = scripts.GetComponent<StartPuzzle>().player.GetComponent<Player>().hp;
-                    float maxHp = scripts.GetComponent<StartPuzzle>().player.GetComponent<Player>().puzzle.hp;
-                    text.text = $"{hpNow:0.0}/{maxHp:0.0}";
+                case "fps":
+                    double fpsdouble = Math.Round(1.0 / Time.deltaTime);
+                    fpsSum += (long)fpsdouble;
+                    fpsQueue.Enqueue((int)fpsdouble);
+                    int currentCount = fpsQueue.Count;
+                    if (Math.Abs(fpsdouble - (fpsSum / fpsQueue.Count)) > fpsBigChangeLimit)
+                        for (int i = 0; i < 12; i++)
+                        {
+                            fpsSum -= fpsQueue.Dequeue();
+                            fpsQueue.Enqueue((int)fpsdouble);
+                            fpsSum += (long)fpsdouble;
+                        }
+                    if (fpsQueue.Count == fpsQueueLength+1) fpsSum -= fpsQueue.Dequeue();
+                    //text.text = "FPS: " + fpsSum/ fpsQueue.Count + "\nNow: " + (int)fpsdouble + $"\n({fpsQueue.Count})";
+                    text.text = $"FPS: {fpsSum/fpsQueue.Count - fpsSum / fpsQueue.Count%5} ({(int)fpsdouble})";
                     break;
                 default:
                     if (!logErrorUTT) Debug.LogError("Unsupported text type.");

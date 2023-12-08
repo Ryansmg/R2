@@ -16,6 +16,10 @@ public class Variables
     public bool autoSave; //playTime 이외의 값이 바뀌면 자동 저장한다.
     //settingsEnd
 
+    //planet orbit
+    public float[] planetAngle = new float[9];
+    public float orbitSpeed;
+
     //status
     /// <summary>
     /// {puzzleName, puzzleStatus}
@@ -36,6 +40,10 @@ public class Variables
         gold = 0;
         isHard = false;
         time = 0;
+        orbitSpeed = 10f;
+        float[] firstPa = { 3.20318f, 3.31926775f, 1.52970839f, 
+            3.7813437f, 0.9779366f, 3.182678f, 3.70370388f, 5.114613f, 0.0f};
+        planetAngle = firstPa;
         puzzles = new()
         {
             new("tutorial0", Constant.PUZZLE_NEW),
