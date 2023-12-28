@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Editor : MonoBehaviour
 {
@@ -18,6 +20,7 @@ public class Editor : MonoBehaviour
 
     public int status;
     public int tile;
+    public string nextPuzzleName;
     public bool confirmChange;
 
     public int selectedX=0;
@@ -36,10 +39,70 @@ public class Editor : MonoBehaviour
 
     bool puzzleInfoUpdated = false;
 
+    public TMP_InputField statusIPF;
+    public TMP_InputField tileIPF;
+    public TMP_InputField npnIPF;
+    public Toggle swipeToggle;
+    public static Dictionary<string, int> strToStatus;
+    public static Dictionary<int, string> statusToStr;
+    public static bool selectedOther = false;
+
     // Start is called before the first frame update
     void Start()
     {
+        selectedOther = false;
         isEditing = true;
+        StartPuzzle.isDebugStart = false;
+        strToStatus = new Dictionary<string, int>
+            {
+                { "outsidewall", Constant.GRID_OUTSIDEWALL },
+                { "outside", Constant.GRID_OUTSIDE },
+                { "empty", Constant.GRID_EMPTY },
+                { "", Constant.GRID_EMPTY },
+                { "start", Constant.GRID_START },
+                { "end", Constant.GRID_END },
+                { "wall", Constant.GRID_WALL },
+                { "glasspiece", Constant.GRID_GLASS_PIECE },
+                { "piece", Constant.GRID_GLASS_PIECE },
+                { "glass", Constant.GRID_GLASS_PIECE },
+                { "ironbox", Constant.GRID_IRON_BOX },
+                { "woodenbox", Constant.GRID_WOODEN_BOX },
+                { "conveyorw", Constant.GRID_CONVEYOR_W },
+                { "conveyora", Constant.GRID_CONVEYOR_A },
+                { "conveyors", Constant.GRID_CONVEYOR_S },
+                { "conveyord", Constant.GRID_CONVEYOR_D },
+                { "mirrorq", Constant.GRID_MIRROR_Q },
+                { "mirrorz", Constant.GRID_MIRROR_Z },
+                { "mirrorc", Constant.GRID_MIRROR_C },
+                { "mirrore", Constant.GRID_MIRROR_E },
+                { "npup", Constant.GRID_NEXTPUZZLE_UP },
+                { "nextpuzzleup", Constant.GRID_NEXTPUZZLE_UP },
+                { "npdown", Constant.GRID_NEXTPUZZLE_DOWN },
+                { "nextpuzzledown", Constant.GRID_NEXTPUZZLE_DOWN }
+            };
+        statusToStr = new Dictionary<int, string>
+        {
+                { Constant.GRID_OUTSIDEWALL, "outsidewall" },
+                {  Constant.GRID_OUTSIDE, "outside" },
+                {  Constant.GRID_EMPTY, "empty" },
+                { Constant.GRID_START,"start" },
+                { Constant.GRID_END, "end" },
+                {  Constant.GRID_WALL, "wall" },
+                {  Constant.GRID_GLASS_PIECE, "piece" },
+                { Constant.GRID_IRON_BOX, "ironbox"  },
+                {  Constant.GRID_WOODEN_BOX, "woodenbox" },
+                { Constant.GRID_CONVEYOR_W, "conveyorw"  },
+                {  Constant.GRID_CONVEYOR_A, "conveyora" },
+                {  Constant.GRID_CONVEYOR_S, "conveyors" },
+                {  Constant.GRID_CONVEYOR_D, "conveyord" },
+                {  Constant.GRID_MIRROR_Q, "mirrorq" },
+                {  Constant.GRID_MIRROR_Z, "mirrorz" },
+                {  Constant.GRID_MIRROR_C, "mirrorc" },
+                {  Constant.GRID_MIRROR_E, "mirrore" },
+                { Constant.GRID_NEXTPUZZLE_UP,  "npup" },
+                {  Constant.GRID_NEXTPUZZLE_DOWN, "npdown" }
+        };
+
     }
 
     // Update is called once per frame
@@ -54,6 +117,7 @@ public class Editor : MonoBehaviour
                 foreach (PuzzleGrid g in StartPuzzle.currentPuzzle.grids)
                     if (g.status == Constant.GRID_OUTSIDE) removeList.Add(g);
                 foreach (PuzzleGrid g in removeList) StartPuzzle.currentPuzzle.grids.Remove(g);
+                StartPuzzle.currentPuzzle.ResetGridsDict();
 
                 Puzzle newPuzzle = new(puzzleName, oxygen, minMove, hp, perfectHp, StartPuzzle.currentPuzzle.grids.ToArray());
                 newPuzzle.SavePuzzle(indentSave);
@@ -69,6 +133,7 @@ public class Editor : MonoBehaviour
                 foreach(PuzzleGrid g in StartPuzzle.currentPuzzle.grids)
                     if (g.status == Constant.GRID_OUTSIDE) removeList.Add(g);
                 foreach (PuzzleGrid g in removeList) StartPuzzle.currentPuzzle.grids.Remove(g);
+                StartPuzzle.currentPuzzle.ResetGridsDict();
 
                 Puzzle newPuzzle = new(puzzleName, oxygen, minMove, hp, perfectHp, StartPuzzle.currentPuzzle.grids.ToArray());
                 newPuzzle.SavePuzzle(indentSave);
@@ -90,6 +155,7 @@ public class Editor : MonoBehaviour
                     _ => true,
                 };
                 grid.laserExists = false;
+                grid.nextPuzzleName = nextPuzzleName;
 
                 if (grid.status == Constant.GRID_LASER_W || grid.status == Constant.GRID_LASER_A ||
                     grid.status == Constant.GRID_LASER_S || grid.status == Constant.GRID_LASER_D)
@@ -113,8 +179,20 @@ public class Editor : MonoBehaviour
                 preSelX = selectedX;
                 preSelY = selectedY;
                 PuzzleGrid grid = StartPuzzle.currentPuzzle.GetGrid(selectedX, selectedY);
-                status = grid.status;
-                tile = grid.tile;
+                if (!swipeToggle.isOn)
+                {
+                    status = grid.status;
+                    tile = grid.tile;
+                    nextPuzzleName = grid.nextPuzzleName;
+                    statusIPF.text = statusToStr[grid.status];
+                    tileIPF.text = grid.tile + "";
+                    npnIPF.text = grid.nextPuzzleName;
+                } else
+                {
+                    StatusIPFUpdated();
+                    TileIPFUpdated();
+                    NPNIPFUpdated();
+                }
             }
             if(incCamSize)
             {
@@ -137,4 +215,31 @@ public class Editor : MonoBehaviour
             }
         } catch (NullReferenceException) { }
     }
+    public void StatusIPFUpdated()
+    {
+        string s = statusIPF.text.Replace(" ", "").ToLower();
+        if (int.TryParse(s, out int r))
+        {
+            status = r;
+            confirmChange = true;
+        }
+        else if (strToStatus.ContainsKey(s)) { 
+            status = strToStatus[s]; 
+            confirmChange = true;
+        }
+    }
+    public void TileIPFUpdated() {
+        if (int.TryParse(tileIPF.text, out int i))
+        {
+            tile = i;
+            confirmChange = true;
+        }
+    }
+    public void NPNIPFUpdated() { nextPuzzleName = npnIPF.text; confirmChange = true; }
+    public void SaveButtonPress() { save = true; }
+    public void EndEditButtonPress() { endEdit = true; }
+    public void ZoomOutButtonPress() { incCamSize = true; }
+    public void ZoomInButtonPress() { decCamSize = true; }
+    public void IPFSelected() { selectedOther = true; }
+    public void IPFDeselected() { selectedOther = false; }
 }

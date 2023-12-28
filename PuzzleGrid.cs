@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 public class PuzzleGrid { 
     public int x;
     public int y;
@@ -13,6 +10,7 @@ public class PuzzleGrid {
     public bool yLaserExists;
     public int laserStartX;
     public int laserStartY;
+    public string nextPuzzleName;
 
     /// <summary>
     /// Default constructor for JSON deserialization.
@@ -37,6 +35,7 @@ public class PuzzleGrid {
             _ => true,
         };
         laserExists = false;
+        nextPuzzleName = null;
     }
 
     public PuzzleGrid(int x, int y) : this(x, y, Constant.GRID_EMPTY, 4) { }

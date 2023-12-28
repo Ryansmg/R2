@@ -12,6 +12,8 @@ public class PObjManager : MonoBehaviour
     public float conveyorWaitTimer = 0f;
     public float conveyorWaitTimerDefault;
     public GameObject mirrorLaser;
+    public GameObject childGO;
+    public float laserTimer = 0f;
     private void Start()
     {
     }
@@ -21,6 +23,13 @@ public class PObjManager : MonoBehaviour
         try
         {
             transform.position = Vector3.SmoothDamp(transform.position, new Vector3(pObj.x, pObj.y, 0), ref velocity, smoothness);
+
+            //destroy by hp
+            if (pObj.hp <= 0 && pObj.type == Constant.GRID_WOODEN_BOX)
+            {
+                pObj.puzzle.objects.Remove(new(pObj.x, pObj.y));
+                Destroy(gameObject);
+            }
         } catch (NullReferenceException) { }
 
         //laser behavior
@@ -30,6 +39,21 @@ public class PObjManager : MonoBehaviour
         }
         catch (NullReferenceException) { }
         catch (UnassignedReferenceException) { }
+
+        if(pObj.type == Constant.GRID_WOODEN_BOX && pObj.isOnLaser)
+        {
+            if (laserTimer <= 0f) { 
+                pObj.hp -= 0.5f; 
+                laserTimer = 0.5f; 
+            } else
+            {
+                laserTimer -= Time.deltaTime;
+            }
+            childGO.GetComponent<SpriteRenderer>().color = new Color(1, 1 - (210 * laserTimer / 255), 1 - (210 * laserTimer / 255));
+        } else if(pObj.type == Constant.GRID_WOODEN_BOX) {
+            laserTimer = 0f;
+            childGO.GetComponent<SpriteRenderer>().color = Color.white;
+        }
 
         //conveyor movement
         if (Player.IsGridConveyor(StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y)) && conveyorWaitTimer > 0)
@@ -42,7 +66,7 @@ public class PObjManager : MonoBehaviour
 
         if (StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y).status == Constant.GRID_CONVEYOR_W)
         {
-            if (Player.CheckMoveableStatic(pObj.x, pObj.y + 1)
+            if (Player.CheckMoveable_s(pObj.x, pObj.y + 1)
                 && !Player.CheckPlayer(StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y + 1)))
             {
                 conveyorWaitTimer = conveyorWaitTimerDefault;
@@ -51,7 +75,7 @@ public class PObjManager : MonoBehaviour
         }
         else if (StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y).status == Constant.GRID_CONVEYOR_A)
         {
-            if (Player.CheckMoveableStatic(pObj.x - 1, pObj.y)
+            if (Player.CheckMoveable_s(pObj.x - 1, pObj.y)
                 && !Player.CheckPlayer(StartPuzzle.currentPuzzle.GetGrid(pObj.x - 1, pObj.y)))
             {
                 conveyorWaitTimer = conveyorWaitTimerDefault;
@@ -60,7 +84,7 @@ public class PObjManager : MonoBehaviour
         }
         else if (StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y).status == Constant.GRID_CONVEYOR_S)
         {
-            if (Player.CheckMoveableStatic(pObj.x, pObj.y - 1)
+            if (Player.CheckMoveable_s(pObj.x, pObj.y - 1)
                 && !Player.CheckPlayer(StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y - 1)))
             {
                 conveyorWaitTimer = conveyorWaitTimerDefault;
@@ -69,7 +93,7 @@ public class PObjManager : MonoBehaviour
         }
         else if (StartPuzzle.currentPuzzle.GetGrid(pObj.x, pObj.y).status == Constant.GRID_CONVEYOR_D)
         {
-            if (Player.CheckMoveableStatic(pObj.x + 1, pObj.y)
+            if (Player.CheckMoveable_s(pObj.x + 1, pObj.y)
                 && !Player.CheckPlayer(StartPuzzle.currentPuzzle.GetGrid(pObj.x + 1, pObj.y)))
             {
                 conveyorWaitTimer = conveyorWaitTimerDefault;

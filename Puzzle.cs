@@ -36,6 +36,8 @@ public class Puzzle
     public Dictionary<KeyValuePair<int, int>, PObj> objects = new();
     public List<PuzzleGrid> laserStartGrids;
 
+    public bool hasStartGrid, hasEndGrid;
+
     public static PuzzleGrid nonExistentGrid = new(int.MinValue, int.MinValue, Constant.GRID_OUTSIDE, -1);
     Puzzle() { }
     public Puzzle(string name, int oxygen, int minMove, float hp, float perfectHp, PuzzleGrid[] grids)
@@ -77,8 +79,8 @@ public class Puzzle
             if (grid.status == Constant.GRID_END) hasEnd = true;
             if (IsGridLaserStart(grid.status)) { laserStartGrids.Add(grid); }
         }
-        if (!hasStart) throw new InvalidDataException("This puzzle doesn't have a start grid.");
-        if (!hasEnd) throw new InvalidDataException("This puzzle doesn't have a end grid.");
+        hasStartGrid = hasStart;
+        hasEndGrid = hasEnd;
 
         this.laserStartGrids = laserStartGrids;
 
@@ -102,7 +104,7 @@ public class Puzzle
 #if UNITY_EDITOR
         File.WriteAllText(filePath, JsonConvert.SerializeObject(this, Formatting.Indented));
 #else
-        Debug.LogError("Tried SavePuzzle() outside unity editor.");
+        //Debug.LogError("Tried SavePuzzle() outside unity editor.");
 #endif
     }
     public void SavePuzzleNotIndented()
@@ -111,22 +113,28 @@ public class Puzzle
 #if UNITY_EDITOR
         File.WriteAllText(filePath, JsonConvert.SerializeObject(this));
 #else
-        Debug.LogError("Tried SavePuzzle() outside unity editor.");
+        //Debug.LogError("Tried SavePuzzle() outside unity editor.");
 #endif
     }
     public PuzzleGrid GetGrid(int x, int y)
     {
         if (gridsDict.TryGetValue($"{x},{y}", out int value))
         {
+            if(value >= grids.Count) return nonExistentGrid; 
             return grids[value];
         }
         else return nonExistentGrid;
+    }
+    public void ResetGridsDict()
+    {
+        gridsDict.Clear();
+        for(int i = 0; i < grids.Count; i++)
+            gridsDict.Add($"{grids[i].x},{grids[i].y}", i);
     }
     bool IsGridLaserStart(int status)
     {
         bool b = status switch
         {
-            Constant.GRID_LASER_START => true,
             Constant.GRID_LASER_W => true,
             Constant.GRID_LASER_A => true,
             Constant.GRID_LASER_S => true,

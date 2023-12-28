@@ -41,6 +41,13 @@ public class PTextManager : MonoBehaviour
                 Debug.LogError("Waiting for restart...");
                 logErrorNRE = true;
             }
+        } catch (UnassignedReferenceException)
+        {
+            if (!logErrorNRE)
+            {
+                Debug.LogError("Waiting for restart...");
+                logErrorNRE = true;
+            }
         }
     }
 }

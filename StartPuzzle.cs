@@ -1,7 +1,5 @@
 using Newtonsoft.Json;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 public class StartPuzzle : MonoBehaviour
 {
@@ -18,38 +16,58 @@ public class StartPuzzle : MonoBehaviour
     public static Puzzle currentPuzzle;
     public static bool puzzleLoaded = false;
     public bool editMode = false;
+    public static bool isFirstPuzzle = true;
+    public static Dictionary<string, Puzzle> puzzleDictionary;
 
     //Debug
+    public string dbg_startPuzzleName;
+    public static bool isDebugStart = true;
     public string changePuzzleName;
     void Update()
     {
-        puzzleName = changePuzzleName;
+        if(Player.currentPlayer != null)
+            if(!Player.currentPlayer.isGoingToNextPuzzle) puzzleName = changePuzzleName;
     }
     void Start()
     {
         PObj.woodenBoxPrefab = woodenBoxPrefab;
         PObj.ironBoxPrefab = ironBoxPrefab;
         PObj.mirrorPrefab = mirrorPrefab;
-        if (!Editor.pnstatic.Equals("placeholder")) puzzleName = Editor.pnstatic;
+        if (isDebugStart) puzzleName = dbg_startPuzzleName;
         changePuzzleName = puzzleName;
 
         scripts.GetComponent<SaveFile>().Load();
-        PuzzleGrid[] testGrids = {
-            new(0,0,Constant.GRID_START, 4), new(1,0,Constant.GRID_END, 4)};
-        Puzzle puzzle = new("test", 1000, 11, 500.0f, 500.0f, testGrids);
-        puzzle.SavePuzzle();
-        //LoadPuzzle(puzzle);
-        LoadPuzzle(puzzleName);
-        //LoadPuzzle("test");
+
+        PuzzleGrid[] testGrids = { new(0,0,Constant.GRID_START, 4), new(1,0,Constant.GRID_END, 4) };
+        Puzzle testpuzzle = new("test", 1000, 11, 500.0f, 500.0f, testGrids);
+        testpuzzle.SavePuzzle();
+
+        Debug.Log("Loading Puzzle: " + puzzleName);
+        LoadPuzzle(puzzleName, isFirstPuzzle);
+
+        isDebugStart = false;
     }
-    public void LoadPuzzle(string name)
+    public void LoadPuzzle(string name, bool isFirstPuzzle)
     {
-        LoadPuzzle(GetPuzzle(name));
+        if(!isFirstPuzzle)
+        {
+            if(puzzleDictionary.TryGetValue(name, out Puzzle outPuzzle))
+            {
+                LoadPuzzle(outPuzzle, false);
+            }
+            else LoadPuzzle(GetPuzzle(name), isFirstPuzzle);
+        }
+        else LoadPuzzle(GetPuzzle(name), isFirstPuzzle);
     }
-    public void LoadPuzzle(Puzzle puzzle)
+    public void LoadPuzzle(Puzzle puzzle, bool isFirstPuzzle)
     {
+        puzzleLoaded = false;
+
         Transform gridT = GameObject.Find("Grids").transform;
         currentPuzzle = puzzle;
+
+        if (isFirstPuzzle) puzzleDictionary = new Dictionary<string, Puzzle>();
+        bool isFirstEntry = !puzzleDictionary.ContainsKey(puzzle.puzzleName);
 
         Camera.main.transform.position = new Vector3(puzzle.cameraPosX, puzzle.cameraPosY, -10);
         Camera.main.orthographicSize = puzzle.cameraSize;
@@ -61,18 +79,47 @@ public class StartPuzzle : MonoBehaviour
             gridObj.GetComponent<GridManager>().grid = grid;
             gridObj.GetComponent<GridManager>().puzzle = puzzle;
             if (grid.status == Constant.GRID_START) { startX = grid.x; startY = grid.y; }
-            if(!editMode) new PObj(grid.x, grid.y, grid.status).Generate();
+            if(!editMode && isFirstEntry) new PObj(grid.x, grid.y, grid.status).Generate();
+        }
+
+        Dictionary<KeyValuePair<int, int>, PObj> pobjects = new(puzzle.objects);
+        if(!isFirstEntry)
+        {
+            foreach (var v in pobjects) v.Value.Generate();
         }
 
 
         //instantiate player
+        Player prevPlayer = Player.currentPlayer;
         player = Instantiate(playerPrefab);
-        player.transform.position = new Vector3(startX, startY);
-        player.GetComponent<Player>().x = startX;
-        player.GetComponent<Player>().y = startY;
         player.GetComponent<Player>().puzzle = puzzle;
-        player.GetComponent<Player>().oxygen = puzzle.oxygen;
-        player.GetComponent<Player>().hp = puzzle.hp;
+        if (isFirstPuzzle)
+        {
+            if (!puzzle.hasStartGrid)
+            {
+                if (!isDebugStart && !editMode)
+                {
+                    Debug.LogError("error: firstPuzzle without startGrid.");
+                    return;
+                }
+            }
+            else
+            {
+                player.GetComponent<Player>().x = startX;
+                player.GetComponent<Player>().y = startY;
+                player.transform.position = new Vector3(startX, startY);
+            }
+            player.GetComponent<Player>().oxygen = puzzle.oxygen;
+            player.GetComponent<Player>().hp = puzzle.hp;
+        }
+        else
+        {
+            player.GetComponent<Player>().x = prevPlayer.x;
+            player.GetComponent<Player>().y = prevPlayer.y;
+            player.transform.position = new Vector3(prevPlayer.x, prevPlayer.y);
+            player.GetComponent<Player>().oxygen = prevPlayer.oxygen;
+            player.GetComponent<Player>().hp = prevPlayer.hp;
+        }
 
         //set cameraPos, mapLength, etc
         int mapEndX, mapEndY, mapStartX, mapStartY;
@@ -103,9 +150,12 @@ public class StartPuzzle : MonoBehaviour
             }
         }
 
+        if (!puzzleDictionary.ContainsKey(puzzle.puzzleName))
+            puzzleDictionary.Add(puzzle.puzzleName, puzzle);
+
         puzzleLoaded = true;
     }
-    public Puzzle GetPuzzle(string name)
+    public static Puzzle GetPuzzle(string name)
     {
         TextAsset puzzle = (TextAsset)Resources.Load($"puzzle\\{name}");
         return JsonConvert.DeserializeObject<Puzzle>(puzzle.text);

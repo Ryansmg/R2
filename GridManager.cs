@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -16,24 +14,40 @@ public class GridManager : MonoBehaviour
     public GameObject conveyor;
     public GameObject mirror;
     public GameObject mirrorLaser;
+    public GameObject nxtpzle_up;
+    public GameObject nxtpzle_down;
     public GameObject[] tiles;
     public PuzzleGrid grid;
     public Puzzle puzzle;
-    // Update is called once per frame
+
+    bool outsideGridUpdated = false;
+
     void LateUpdate()
     {
         if (!StartPuzzle.puzzleLoaded) return;
+        if (outsideGridUpdated && !Editor.isEditing) return;
         int status = grid.status;
-        portal.SetActive(false);
-        block.SetActive(false);
-        ironBox.SetActive(false);
-        woodenBox.SetActive(false);
-        laser.SetActive(false);
-        glassPiece.SetActive(false);
-        laserX.SetActive(false);
-        laserY.SetActive(false);
-        mirror.SetActive(false);
-        conveyor.SetActive(false);
+        if(portal.activeSelf) portal.SetActive(false);
+        if (block.activeSelf) block.SetActive(false);
+        if (ironBox.activeSelf) ironBox.SetActive(false);
+        if (woodenBox.activeSelf) woodenBox.SetActive(false);
+        if (laser.activeSelf) laser.SetActive(false);
+        if (glassPiece.activeSelf)
+            glassPiece.SetActive(false);
+        if (laserX.activeSelf)
+            laserX.SetActive(false);
+        if (laserY.activeSelf)
+            laserY.SetActive(false);
+        if (mirror.activeSelf)
+            mirror.SetActive(false);
+        if (conveyor.activeSelf)
+            conveyor.SetActive(false);
+        if(nxtpzle_down.activeSelf)
+            nxtpzle_down.SetActive(false);
+        if(nxtpzle_up.activeSelf)
+            nxtpzle_up.SetActive(false);
+
+        if (status == Constant.GRID_OUTSIDE) outsideGridUpdated = true;
 
         if (Editor.isEditing)
         {
@@ -63,8 +77,9 @@ public class GridManager : MonoBehaviour
         }
         if (status == Constant.GRID_END) portal.SetActive(true);
         if (status == Constant.GRID_WALL) block.SetActive(true);
-        if (status == Constant.GRID_LASER) laserX.SetActive(true);
         if (status == Constant.GRID_GLASS_PIECE) glassPiece.SetActive(true);
+        if (status == Constant.GRID_NEXTPUZZLE_UP) nxtpzle_up.SetActive(true);
+        if (status == Constant.GRID_NEXTPUZZLE_DOWN) nxtpzle_down.SetActive(true);
         if (status == Constant.GRID_CONVEYOR_W)
         {
             conveyor.SetActive(true);
@@ -120,15 +135,9 @@ public class GridManager : MonoBehaviour
             laserY.SetActive(true);
         }
 
-        //deprecated status
-        if (status == Constant.GRID_LASER_START)
-        {
-            laser.SetActive(true); laserX.SetActive(true);
-        }
-        if (status == Constant.GRID_LASER_END) laserX.SetActive(true);
         gameObject.transform.position = new Vector3(grid.x, grid.y);
         tiles[grid.tile].SetActive(true);
-        for (int i = 0; i < grid.tile; i++) tiles[i].SetActive(false);
-        for (int i = grid.tile + 1; i < 10; i++) tiles[i].SetActive(false);
+        for (int i = 0; i < grid.tile; i++) if (tiles[i].activeSelf) tiles[i].SetActive(false);
+        for (int i = grid.tile + 1; i < 10; i++) if (tiles[i].activeSelf) tiles[i].SetActive(false);
     }
 }

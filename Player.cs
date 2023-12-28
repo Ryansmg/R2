@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class Player : MonoBehaviour
 
     float preHp;
 
-    bool goBack;
+    bool goBackAtNextUpdate;
     bool logErrorNullRefUpdate0 = true;
 
     public Puzzle puzzle;
@@ -41,6 +42,8 @@ public class Player : MonoBehaviour
     public float conveyorWaitTimerDefault;
     float conveyorWaitTimer = 0f;
 
+    public bool isGoingToNextPuzzle = false;
+
     // Debug Variables
     public bool allowFreeMovement = false;
     void Start()
@@ -51,16 +54,18 @@ public class Player : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (!StartPuzzle.puzzleLoaded) return;
+
         preHp = hp;
 
         bool allowInput = true;
-        if (goBack)
+        if (goBackAtNextUpdate)
         {
             GoBack();
             allowInput = false;
-            goBack = false;
+            goBackAtNextUpdate = false;
         }
-        PuzzleGrid currentGrid = puzzle.GetGrid(x, y);
+        PuzzleGrid currentGrid;
 
         //move to current position grid.
         transform.position = Vector3.SmoothDamp(transform.position, new Vector3(x, y, 1), ref velocity, smoothness);
@@ -69,17 +74,35 @@ public class Player : MonoBehaviour
         if(Editor.isEditing)
         {
             Editor editor = GameObject.Find("Scripts").GetComponent<Editor>();
+            if (editor.endEdit) return;
 
-            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
-            { y++; moveDirection = DIR_W; oxygen--; }
-            else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
-            { x--; moveDirection = DIR_A; oxygen--; }
-            else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
-            { y--; moveDirection = DIR_S; oxygen--; }
-            else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
-            { x++; moveDirection = DIR_D; oxygen--; }
+            if (Input.GetKeyDown(KeyCode.UpArrow)) { y++; moveDirection = DIR_W; }
+            if (Input.GetKeyDown(KeyCode.LeftArrow)) { x--; moveDirection = DIR_A; }
+            if (Input.GetKeyDown(KeyCode.DownArrow)) { y--; moveDirection = DIR_S; }
+            if (Input.GetKeyDown(KeyCode.RightArrow)) { x++; moveDirection = DIR_D; }
+            if (!Editor.selectedOther)
+            {
+                if (Input.GetKeyDown(KeyCode.W)) { y++; moveDirection = DIR_W; }
+                if (Input.GetKeyDown(KeyCode.A)) { x--; moveDirection = DIR_A; }
+                if (Input.GetKeyDown(KeyCode.S)) { y--; moveDirection = DIR_S; }
+                if (Input.GetKeyDown(KeyCode.D)) { x++; moveDirection = DIR_D; }
+                if(Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+                {
+                    if (Input.GetKeyDown(KeyCode.W)) { y++; moveDirection = DIR_W; }
+                    if (Input.GetKeyDown(KeyCode.A)) { x--; moveDirection = DIR_A; }
+                    if (Input.GetKeyDown(KeyCode.S)) { y--; moveDirection = DIR_S; }
+                    if (Input.GetKeyDown(KeyCode.D)) { x++; moveDirection = DIR_D; }
+                }
+                if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                {
+                    if (Input.GetKeyDown(KeyCode.W)) { y++; moveDirection = DIR_W; }
+                    if (Input.GetKeyDown(KeyCode.A)) { x--; moveDirection = DIR_A; }
+                    if (Input.GetKeyDown(KeyCode.S)) { y--; moveDirection = DIR_S; }
+                    if (Input.GetKeyDown(KeyCode.D)) { x++; moveDirection = DIR_D; }
+                }
+            }
 
-            GenerateLasers();
+            //GenerateLasers();
 
             editor.selectedX = x; editor.selectedY = y;
             if(puzzle.GetGrid(x,y) == Puzzle.nonExistentGrid)
@@ -99,8 +122,36 @@ public class Player : MonoBehaviour
             return;
         }
 
+        //nextpuzzle
+        currentGrid = puzzle.GetGrid(x, y);
+        if (isGoingToNextPuzzle) return;
+        if (currentGrid.status == Constant.GRID_NEXTPUZZLE_UP || currentGrid.status == Constant.GRID_NEXTPUZZLE_DOWN)
+        {
+            if (StartPuzzle.puzzleDictionary.TryGetValue(currentGrid.nextPuzzleName, out Puzzle vp))
+            {
+                if (CheckMoveable(x, y, vp))
+                {
+                    GameObject.Find("Scripts").GetComponent<ChangeScene>().ChangeToPuzzle(currentGrid.nextPuzzleName, false);
+                    isGoingToNextPuzzle = true;
+                    allowInput = false;
+                }
+                else Debug.Log("다른 퍼즐의 해당 그리드가 막혀 있어 이동할 수 없습니다!");
+            }
+            else
+            {
+                if (CheckMoveable(x, y, StartPuzzle.GetPuzzle(currentGrid.nextPuzzleName))) {
+                    GameObject.Find("Scripts").GetComponent<ChangeScene>().ChangeToPuzzle(currentGrid.nextPuzzleName, false);
+                    isGoingToNextPuzzle = true;
+                    allowInput = false;
+                }
+                else Debug.Log("다른 퍼즐의 해당 그리드가 막혀 있어 이동할 수 없습니다!");
+            }
+        }
+
         try
         {
+            GenerateLasers();
+
             //glass piece damage
             if(currentGrid.status == Constant.GRID_GLASS_PIECE)
             {
@@ -129,7 +180,7 @@ public class Player : MonoBehaviour
             {
                 bool hasObject = puzzle.objects.TryGetValue(new(x,y), out PObj obj);
                 bool checkObj = true;
-                if (hasObject) checkObj = obj.isMoveable;
+                if (hasObject) checkObj = obj.isPlayerMoveable;
                 if (currentGrid.laserExists && checkObj)
                 {
                     currentLaserStartX = currentGrid.laserStartX;
@@ -144,7 +195,7 @@ public class Player : MonoBehaviour
             else if (currentGrid.status == Constant.GRID_END) { Debug.Log("win"); allowInput = false; }
             else if (oxygen == 0)
             {
-                if (goBack) { allowInput = false; }
+                if (goBackAtNextUpdate) { allowInput = false; }
                 else
                 {
                     Debug.Log("Dead");
@@ -162,22 +213,21 @@ public class Player : MonoBehaviour
         }
 
         if (hp < preHp) { UIManager.wasDamaged = true; }
-        
-        if (!allowInput) { return; }
 
         //conveyor movement
-        if (IsGridConveyor(puzzle.GetGrid(x, y)) && conveyorWaitTimer > 0)
+        currentGrid = puzzle.GetGrid(x, y);
+        if (IsGridConveyor(currentGrid) && conveyorWaitTimer > 0)
         {
             conveyorWaitTimer -= Time.deltaTime;
             return;
         }
-        else if (!IsGridConveyor(StartPuzzle.currentPuzzle.GetGrid(x, y)))
+        else if (!IsGridConveyor(currentGrid))
         {
             conveyorWaitTimer = conveyorWaitTimerDefault;
             smoothness = defaultSmoothness;
         }
 
-        if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_W)
+        if (currentGrid.status == Constant.GRID_CONVEYOR_W)
         {
             if (CheckMoveable(x, y + 1))
             {
@@ -188,7 +238,7 @@ public class Player : MonoBehaviour
                 return;
             }
         }
-        else if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_A)
+        else if (currentGrid.status == Constant.GRID_CONVEYOR_A)
         {
             if (CheckMoveable(x - 1, y))
             {
@@ -199,7 +249,7 @@ public class Player : MonoBehaviour
                 return;
             }
         }
-        else if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_S)
+        else if (currentGrid.status == Constant.GRID_CONVEYOR_S)
         {
             if (CheckMoveable(x, y - 1))
             {
@@ -210,7 +260,7 @@ public class Player : MonoBehaviour
                 return;
             }
         }
-        else if (puzzle.GetGrid(x, y).status == Constant.GRID_CONVEYOR_D)
+        else if (currentGrid.status == Constant.GRID_CONVEYOR_D)
         {
             if (CheckMoveable(x + 1, y))
             {
@@ -221,6 +271,8 @@ public class Player : MonoBehaviour
                 return;
             }
         }
+
+        if (!allowInput) { return; }
 
         //detect inputs and move player
         if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
@@ -248,17 +300,19 @@ public class Player : MonoBehaviour
             };
             if (puzzle.objects.TryGetValue(new(x, y), out PObj pObj))
             {
-                if (!pObj.isMoveable)
+                if (!pObj.isPlayerMoveable)
                 {
-                    MoveBackHalf();
-                    goBack = true;
+                    SetPosToBack(0.4f);
+                    //goBack = true;
                     pObj.PushTo(x + dx, y + dy);
+                    GoBack();
                 }
             }
 
             else if (!puzzle.GetGrid(x, y).isMoveable && !allowFreeMovement) {
-                MoveBackHalf();
-                goBack = true;
+                SetPosToBack(0.4f);
+                GoBack();
+                //goBack = true;
             }
 
             GenerateLasers();
@@ -290,15 +344,23 @@ public class Player : MonoBehaviour
         bool isMoveable = true;
         if (!puzzle.GetGrid(nx, ny).isMoveable) isMoveable = false;
         if (puzzle.objects.TryGetValue(new(nx, ny), out PObj pObj))
-            if (!pObj.isMoveable) isMoveable = false;
+            if (!pObj.isPlayerMoveable) isMoveable = false;
         return isMoveable;
     }
-    public static bool CheckMoveableStatic(int nx, int ny)
+    public static bool CheckMoveable(int nx, int ny, Puzzle puzzle_)
+    {
+        bool isMoveable = true;
+        if (!puzzle_.GetGrid(nx, ny).isMoveable) isMoveable = false;
+        if (puzzle_.objects.TryGetValue(new(nx, ny), out PObj pObj))
+            if (!pObj.isPlayerMoveable) isMoveable = false;
+        return isMoveable;
+    }
+    public static bool CheckMoveable_s(int nx, int ny)
     {
         bool isMoveable = true;
         if (!StartPuzzle.currentPuzzle.GetGrid(nx, ny).isMoveable) isMoveable = false;
         if (StartPuzzle.currentPuzzle.objects.TryGetValue(new(nx, ny), out PObj pObj))
-            if (!pObj.isMoveable) isMoveable = false;
+            if (!pObj.isPlayerMoveable) isMoveable = false;
         return isMoveable;
     }
     public void GoBack()
@@ -313,14 +375,14 @@ public class Player : MonoBehaviour
         }
     }
 
-    public void MoveBackHalf()
+    public void SetPosToBack(float f)
     {
         switch(moveDirection)
         {
-            case DIR_W: transform.position = new Vector3(x, y - 0.5f, 1); break;
-            case DIR_A: transform.position = new Vector3(x + 0.5f, y, 1); break;
-            case DIR_S: transform.position = new Vector3(x, y + 0.5f, 1); break;
-            case DIR_D: transform.position = new Vector3(x - 0.5f, y, 1); break;
+            case DIR_W: transform.position = new Vector3(x, y - f, 1); break;
+            case DIR_A: transform.position = new Vector3(x + f, y, 1); break;
+            case DIR_S: transform.position = new Vector3(x, y + f, 1); break;
+            case DIR_D: transform.position = new Vector3(x - f, y, 1); break;
             default: break;
         }
     }
@@ -354,7 +416,7 @@ public class Player : MonoBehaviour
                     {
                         if (puzzle.objects.TryGetValue(new(currentX, currentY), out currentPObject))
                         {
-                            if (currentPObject.isMoveable)
+                            if (currentPObject.isPlayerMoveable)
                             {
                                 puzzle.GetGrid(currentX, currentY).laserExists = true;
                                 puzzle.GetGrid(currentX, currentY).yLaserExists = true;
@@ -401,7 +463,7 @@ public class Player : MonoBehaviour
                     {
                         if (puzzle.objects.TryGetValue(new(currentX, currentY), out currentPObject))
                         {
-                            if (currentPObject.isMoveable)
+                            if (currentPObject.isPlayerMoveable)
                             {
                                 puzzle.GetGrid(currentX, currentY).laserExists = true;
                                 puzzle.GetGrid(currentX, currentY).xLaserExists = true;
@@ -447,7 +509,7 @@ public class Player : MonoBehaviour
                     {
                         if (puzzle.objects.TryGetValue(new(currentX, currentY), out currentPObject))
                         {
-                            if (currentPObject.isMoveable)
+                            if (currentPObject.isPlayerMoveable)
                             {
                                 puzzle.GetGrid(currentX, currentY).laserExists = true;
                                 puzzle.GetGrid(currentX, currentY).yLaserExists = true;
@@ -495,7 +557,7 @@ public class Player : MonoBehaviour
                     {
                         if (puzzle.objects.TryGetValue(new(currentX, currentY), out currentPObject))
                         {
-                            if (currentPObject.isMoveable)
+                            if (currentPObject.isPlayerMoveable)
                             {
                                 puzzle.GetGrid(currentX, currentY).laserExists = true;
                                 puzzle.GetGrid(currentX, currentY).xLaserExists = true;

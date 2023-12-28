@@ -11,7 +11,9 @@ public class PObj
     public static GameObject mirrorPrefab;
     public GameObject gObject;
     public Puzzle puzzle;
-    public bool isMoveable;
+    public bool isPlayerMoveable;
+    public bool isBreakable;
+    public bool isPushable;
     public float hp;
     public bool isOnLaser = false;
     public int laserDir = ld_none;
@@ -38,51 +40,62 @@ public class PObj
         {
             case Constant.GRID_WOODEN_BOX:
                 gObject = Object.Instantiate(woodenBoxPrefab, GameObject.Find("Objects").transform);
-                isMoveable = false;
-                hp = 1.5f;
+                isPlayerMoveable = false;
+                isBreakable = true;
+                isPushable = true;
+                hp = 3f;
                 break;
             case Constant.GRID_IRON_BOX:
                 gObject = Object.Instantiate(ironBoxPrefab, GameObject.Find("Objects").transform);
-                isMoveable = false;
-                hp = 10000000f;
+                isPlayerMoveable = false;
+                isBreakable = false;
+                isPushable = true;
                 break;
             case Constant.GRID_MIRROR_Q:
                 gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 90);
-                isMoveable = false;
+                isPlayerMoveable = false;
+                isBreakable = false;
+                isPushable = true;
                 isMirror = true;
                 break;
             case Constant.GRID_MIRROR_Z:
                 gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 180);
-                isMoveable = false;
+                isPlayerMoveable = false;
+                isBreakable = false;
+                isPushable = true;
                 isMirror = true;
                 break;
             case Constant.GRID_MIRROR_C:
                 gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 270);
-                isMoveable = false;
+                isPlayerMoveable = false;
+                isBreakable = false;
+                isPushable = true;
                 isMirror = true;
                 break;
             case Constant.GRID_MIRROR_E:
                 gObject = Object.Instantiate(mirrorPrefab, GameObject.Find("Objects").transform);
                 gObject.transform.rotation = Quaternion.Euler(0, 0, 0);
-                isMoveable = false;
+                isPlayerMoveable = false;
+                isBreakable = false;
+                isPushable = true;
                 isMirror = true;
                 break;
             default: return;
         }
         gObject.GetComponent<PObjManager>().pObj = this;
         gObject.transform.position = new Vector3(x, y, 0);
-        puzzle.objects.Add(new(x, y), this);
+        puzzle.objects.TryAdd(new(x, y), this);
     }
 
     public void PushTo(int nx, int ny)
     {
-        if(Mathf.Abs(x-nx) > 1 || Mathf.Abs(y-ny) > 1) { return; }
+        if(Mathf.Abs(x-nx) > 1 || Mathf.Abs(y-ny) > 1 || !isPushable) { return; }
         bool objCheck = true;
-        if (puzzle.objects.TryGetValue(new(nx,ny), out PObj pObj))
-            if (!pObj.isMoveable) objCheck = false;
+        if (puzzle.objects.TryGetValue(new(nx, ny), out PObj pObj))
+            if (!pObj.isPlayerMoveable) objCheck = false;
 
         if(puzzle.GetGrid(nx, ny).isMoveable && objCheck)
         {

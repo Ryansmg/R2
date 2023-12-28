@@ -2,9 +2,7 @@ using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.IO;
-using UnityEditor.Build.Content;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class SaveFile : MonoBehaviour
 {
@@ -92,9 +90,15 @@ public class SaveFile : MonoBehaviour
         {
             savePath = Application.persistentDataPath + "/save0";
             UnityEngine.Debug.Log(savePath);
-            if (!File.Exists(savePath)) File.Create(savePath);
-        }
-        Load(File.ReadAllText(savePath));
+            if (!File.Exists(savePath))
+            {
+                Load("");
+                loaded = true;
+                return;
+            }
+        } 
+        string text = File.ReadAllText(savePath);
+        Load(text);
         loaded = true;
     }
     public void Load(string saveFileString)
@@ -116,11 +120,16 @@ public class SaveFile : MonoBehaviour
     }
     public void VarsUpdated()
     {
-        UpdateMCV();
-        if(vars.autoSave) Save();
+        string s = JsonConvert.SerializeObject(vars, Formatting.Indented);
+        UpdateMCV(s);
+        if(vars.autoSave) Save(s);
     }
     public void UpdateMCV()
     {
         manuallyChangeVars = JsonConvert.SerializeObject(vars, Formatting.Indented);
+    }
+    public void UpdateMCV(string indentedSerializedObj)
+    {
+        manuallyChangeVars = indentedSerializedObj;
     }
 }
